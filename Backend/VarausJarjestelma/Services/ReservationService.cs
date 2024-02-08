@@ -18,7 +18,7 @@ namespace VarausJarjestelma.Services
         }
         public async Task<ReservationDTO> CreateReservationAsync(ReservationDTO dto)
         {
-            if(dto.StartTime>= dto.EndTime)
+            if(dto.StartTime >= dto.EndTime)
             {
                 return null;
             }
@@ -32,64 +32,113 @@ namespace VarausJarjestelma.Services
             {
                 return null;
             }
-            Reservation newReservation = await DTOToReservationAsync(dto);
 
+            Reservation newReservation = await DTOToReservation(dto);
             newReservation = await _repository.AddReservationAsync(newReservation);
-
             return ReservationToDTO(newReservation);
         }
 
-        public Task<bool> DeleteReservationAsync(long id)
+        public async Task<bool> DeleteReservationAsync(long id)
         {
-            throw new NotImplementedException();
+            Reservation oldReservation = await _repository.GetReservationAsync(id);
+            if (oldReservation == null)
+            {
+                return false;
+            }
+            return await _repository.DeleteReservationAsync(oldReservation);
         }
 
-        public Task<ReservationDTO> GetReservationAsync(long id)
+        public async Task<ReservationDTO> GetReservationAsync(long id)
         {
-            throw new NotImplementedException();
+            Reservation reservation = await _repository.GetReservationAsync(id);
+
+            if (reservation != null)
+            {
+                return ReservationToDTO(reservation);
+            }
+            return null;
         }
 
-        public Task<IEnumerable<ReservationDTO>> GetReservationAsync()
+        public async Task<IEnumerable<ReservationDTO>> GetReservationAsync()
         {
-            throw new NotImplementedException();
+            IEnumerable<Reservation> reservations = await _repository.GetReservationsAsync();
+            List<ReservationDTO> result = new List<ReservationDTO>();
+            foreach (Reservation r in reservations)
+            {
+                result.Add(ReservationToDTO(r));
+            }
+            return result;
         }
 
-        public Task<ReservationDTO> UpdateReservationAsync(ReservationDTO reservation)
+        public async Task<ReservationDTO> UpdateReservationAsync(ReservationDTO reservation)
         {
-            throw new NotImplementedException();
-        }
-
-        private async Task<Reservation> DTOToReservationAsync(ReservationDTO dto)
-        {
-            Reservation res = new Reservation();
-            User owner = await _userRepository.GetUserAsync(dto.Owner); 
-            if(owner == null)
+            Reservation oldReservation = await _repository.GetReservationAsync(reservation.Id);
+            if (oldReservation == null)
             {
                 return null;
             }
+
+            //Hae omistaja kannasta
+            User owner = await _userRepository.GetUserAsync(reservation.Owner);
+            if (owner != null)
+            {
+                oldReservation.Owner = owner;
+            }
+
+            //hae varauksen kohde kannasta
+            Item item = await _itemRepository.GetItemAsync(reservation.Target);
+            if (item != null)
+            {
+                oldReservation.Target = item;
+            }
+
+            oldReservation.StartTime = reservation.StartTime;
+            oldReservation.EndTime = reservation.EndTime;
+            Reservation updatedReservation = await _repository.UpdateReservationAsync(oldReservation);
+            if (updatedReservation == null)
+            {
+                return null;
+            }
+            return ReservationToDTO(updatedReservation);
+        }
+
+        private async Task<Reservation> DTOToReservation(ReservationDTO dto)
+        {
+            Reservation newReservation = new Reservation();
+            newReservation.StartTime = dto.StartTime;
+            newReservation.EndTime = dto.EndTime;
+
+            //Hae omistaja kannasta
+            User owner = await _userRepository.GetUserAsync(dto.Owner);
+            if (owner != null)
+            {
+                newReservation.Owner = owner;
+            }
+
+            //hae kohde kannasta
             Item target = await _itemRepository.GetItemAsync(dto.Target);
-            if(target == null)
+            if (target != null)
             {
-                return null;
+                newReservation.Target = target;
             }
-            res.Id = dto.Id;
-            res.Owner = owner;
-            res.Target = target;
-            res.StartTime = dto.StartTime;
-            res.EndTime = dto.EndTime;
 
-            return res;
+            return newReservation;
         }
 
-        private ReservationDTO ReservationToDTO(Reservation res)
+        private ReservationDTO ReservationToDTO(Reservation reservation)
         {
             ReservationDTO dto = new ReservationDTO();
+            dto.StartTime = reservation.StartTime;
+            dto.EndTime = reservation.EndTime;
+            if (reservation.Owner != null)
+            {
+                dto.Owner = reservation.Owner.Id;
 
-            dto.Id = res.Id;
-            dto.Target = res.Target.Id;
-            dto.Owner = res.Owner.UserName;
-            dto.StartTime = res.StartTime;
-            dto.EndTime = res.EndTime;
+            }
+            if (reservation.Target != null)
+            {
+                dto.Target = reservation.Target.Id;
+            }
 
             return dto;
         }

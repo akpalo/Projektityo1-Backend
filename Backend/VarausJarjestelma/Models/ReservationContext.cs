@@ -4,10 +4,9 @@ namespace VarausJarjestelma.Models
 {
     public class ReservationContext:DbContext
     {
-        internal readonly object Reservation;
+       
 
-        public ReservationContext(DbContextOptions<ReservationContext> options)
-           : base(options)
+        public ReservationContext(DbContextOptions options) : base(options)
         {
         }
 

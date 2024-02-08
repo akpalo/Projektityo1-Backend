@@ -1,15 +1,17 @@
-﻿using VarausJarjestelma.Models;
+﻿using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.EntityFrameworkCore;
 using NuGet.Configuration;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using VarausJarjestelma.Models;
 
-namespace VarausJarjestelma.Middleware { 
-
-    public interface IUserAuthenticationService 
+namespace ReservationSystem2022.Middleware
+{
+    public interface IUserAuthenticationService
     {
         Task<User> Authenticate(string username, string password);
+        Task<bool> IsAllowed(String username, ItemDTO item);
+        Task<bool> IsAllowed(String username, User user);
+        Task<bool> IsAllowed(String username, ReservationDTO reservation);
     }
-
     public class UserAuthenticationService : IUserAuthenticationService
     {
         private readonly ReservationContext _context;
@@ -53,7 +55,7 @@ namespace VarausJarjestelma.Middleware {
             {
                 return false;
             }
-            if (dbItem == null && item.Owner == user.UserName)//Mikäli lisätään uutta itemiä
+            if (dbItem == null && item.Owner == user.Id)//Mikäli lisätään uutta itemiä
             {
                 return true;
             }
@@ -79,7 +81,7 @@ namespace VarausJarjestelma.Middleware {
             return false;
         }
 
-        /*public async Task<bool> IsAllowed(string username, ReservationDTO reservation)
+        public async Task<bool> IsAllowed(string username, ReservationDTO reservation)
         {
             User? user = await _context.Users.Where(x => x.UserName == username).FirstOrDefaultAsync();
             Reservation? dbReservation = await _context.Reservations.Include(i => i.Owner).FirstOrDefaultAsync(i => i.Id == reservation.Id);
@@ -88,7 +90,7 @@ namespace VarausJarjestelma.Middleware {
             {
                 return false;
             }
-            if (dbReservation == null && reservation.Owner == user.UserName)//Mikäli lisätään uutta 
+            if (dbReservation == null && reservation.Owner == user.Id)//Mikäli lisätään uutta 
             {
                 return true;
             }
@@ -96,19 +98,11 @@ namespace VarausJarjestelma.Middleware {
             {
                 return false;
             }
-            if (user.Id == dbReservation.Owner.Id)
+            if (user.Id == dbReservation.Id)
             {
                 return true;
             }
             return false;
-        }*/
+        }
     }
-    }
-    
-
-
-
-    
-
-
-
+}

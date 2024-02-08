@@ -25,19 +25,28 @@ namespace VarausJarjestelma.Repositories
             return reservation;
         }
 
-        public Task<bool> DeleteReservationAsync(Reservation reservation)
+        public async Task<bool> DeleteReservationAsync(Reservation reservation)
         {
-            throw new NotImplementedException();
+            try
+            {
+                _context.Reservations.Remove(reservation);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+            return true;
         }
 
-        public Task<Reservation> GetReservationAsync(long id)
+        public async Task<Reservation> GetReservationAsync(long id)
         {
-            throw new NotImplementedException();
+            return await _context.Reservations.FindAsync(id);
         }
 
-        public Task<IEnumerable<Reservation>> GetReservationsAsync()
+        public async Task<IEnumerable<Reservation>> GetReservationsAsync()
         {
-            throw new NotImplementedException();
+            return await _context.Reservations.ToListAsync();
         }
 
         public async Task<IEnumerable<Reservation>> GetReservationsAsync(Item target, DateTime start, DateTime end)
@@ -45,9 +54,17 @@ namespace VarausJarjestelma.Repositories
             return await _context.Reservations.Include(i => i.Owner).Include(x => x.Target).Where(x => x.Target == target && ((x.StartTime >= start && x.StartTime < end) || (x.EndTime >= start && x.EndTime < end) || (x.StartTime <= start && x.EndTime >= end))).ToListAsync();
         }
 
-        public Task<Reservation> UpdateReservationAsync(Reservation reservation)
+        public async Task<Reservation> UpdateReservationAsync(Reservation reservation)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+            return reservation;
         }
     }
 }

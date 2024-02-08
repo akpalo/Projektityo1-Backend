@@ -5,7 +5,7 @@
         public long Id { get; set; }
         public String? Description { get; set; }
         public String Url { get; set; }
-        public virtual Item Target { get; set; }
+        public virtual Item? Target { get; set; }
     }
 
     public class ImageDTO

@@ -26,14 +26,42 @@ namespace VarausJarjestelma.Repositories
             return user;
         }
 
-        
-
-        public async Task<User?> GetUserAsync(string username)
+        public async Task<bool> DeleteUserAsync(User user)
         {
-            User? user = _context.Users.Where(x => x.UserName == username).FirstOrDefault();
+            try
+            {
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public async Task<User> GetUserAsync(long id)
+        {
+            User user = _context.Users.Where(x => x.Id == id).FirstOrDefault();
             return user;
         }
 
-        
+        public async Task<IEnumerable<User>> GetUsersAsync()
+        {
+            return await _context.Users.ToListAsync();
+        }
+
+        public async Task<User> UpdateUserAsync(User user)
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+            return user;
+        }
     }
 }

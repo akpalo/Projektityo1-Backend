@@ -1,4 +1,5 @@
-﻿using VarausJarjestelma.Repositories;
+﻿using Microsoft.EntityFrameworkCore;
+using VarausJarjestelma.Repositories;
 using VarausJarjestelma.Models;
 
 namespace VarausJarjestelma.Services
@@ -28,6 +29,7 @@ namespace VarausJarjestelma.Services
             {
                 return false;
             }
+            await _repository.ClearImages(oldItem);
             return await _repository.DeleteItemAsync(oldItem);
         }
 
@@ -59,21 +61,62 @@ namespace VarausJarjestelma.Services
         public async Task<ItemDTO> UpdateItemAsync(ItemDTO item)
         {
             Item oldItem = await _repository.GetItemAsync(item.Id);
-            if(oldItem == null)
+            if (oldItem == null)
             {
                 return null;
             }
             oldItem.Name = item.Name;
             oldItem.Description = item.Description;
-            oldItem.Images = item.Images;
+            if (oldItem.Images != null && item.Images != null)
+            {
+                await _repository.ClearImages(oldItem);
+            }
+            if (item.Images != null) //jos kuvia ei ole, lisätään
+            {
+                oldItem.Images = new List<Image>();
+                foreach (ImageDTO i in item.Images)
+                {
+                    Image image = DTOToImage(i);
+                    image.Target = oldItem;
+                    oldItem.Images.Add(image);
+                }
+            }
             oldItem.accessCount++;
-            Item updatedItem =await _repository.UpdateItemAsync(oldItem);
+            Item updatedItem = await _repository.UpdateItemAsync(oldItem);
             if (updatedItem == null)
             {
                 return null;
             }
             return ItemToDTO(updatedItem);
-                
+
+        }
+
+        public async Task<IEnumerable<ItemDTO>> QueryItemsAsync(String query)
+        {
+            IEnumerable<Item> items = await _repository.QueryItems(query);
+            List<ItemDTO> itemDTOs = new List<ItemDTO>();
+            foreach (Item i in items) // käydään lista läpi ja muutetaan kaikki itemDTO:ksi ja lisätään se itemDTOs -listaan
+            {
+                itemDTOs.Add(ItemToDTO(i));
+            }
+            return itemDTOs;
+        }
+
+        public async Task<IEnumerable<ItemDTO>> GetItemsAsync(long id)
+        {
+            User owner = await _userRepository.GetUserAsync(id);
+            if (owner == null)
+            {
+                return null;
+            }
+            IEnumerable<Item> items = await _repository.GetItemsAsync(owner);
+            List<ItemDTO> itemDTOs = new List<ItemDTO>();
+            foreach (Item i in items) // käydään lista läpi ja muutetaan kaikki itemDTO:ksi ja lisätään se itemDTOs -listaan
+            {
+                itemDTOs.Add(ItemToDTO(i));
+            }
+            return itemDTOs;
+
         }
 
         private async Task<Item> DTOToItem(ItemDTO dto)
@@ -89,7 +132,14 @@ namespace VarausJarjestelma.Services
             {
                 newItem.Owner = owner;
             }
-            newItem.Images = dto.Images;
+            if (dto.Images != null)
+            {
+                newItem.Images = new List<Image>();
+                foreach(ImageDTO i in dto.Images)
+                {
+                    newItem.Images.Add(DTOToImage(i));
+                }
+            }
             newItem.accessCount = 0;
             return newItem;
         }
@@ -100,12 +150,39 @@ namespace VarausJarjestelma.Services
             dto.Id = item.Id;
             dto.Name = item.Name;
             dto.Description = item.Description;
-            dto.Images = item.Images;
-            if(item.Owner != null)
+            if (item.Images != null)
             {
-                dto.Owner = item.Owner.UserName;
+                dto.Images = new List<ImageDTO>();
+                foreach (Image i in item.Images)
+                {
+                    dto.Images.Add(ImageToDTO(i));
+                }
+            }
+
+            if (item.Owner != null)
+            {
+                dto.Owner = item.Owner.Id;
+
             }
             return dto;
+
+
         }
+        private Image DTOToImage(ImageDTO dto)
+        {
+            Image image = new Image();
+            image.Url = dto.Url;
+            image.Description = dto.Description;
+            return image;
+        }
+        private ImageDTO ImageToDTO(Image image)
+        {
+            ImageDTO dto = new ImageDTO();
+            dto.Url = image.Url;
+            dto.Description= image.Description;
+            return dto;
+        }
+
+        
     }
 }

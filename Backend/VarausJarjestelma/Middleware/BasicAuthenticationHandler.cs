@@ -1,24 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using VarausJarjestelma.Models;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
-using VarausJarjestelma.Models;
-using VarausJarjestelma.Repositories;
 
-namespace VarausJarjestelma.Middleware
+namespace ReservationSystem2022.Middleware
 {
     public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        private readonly IUserRepository _repository;
         private readonly IUserAuthenticationService _userAuthenticationService;
-        //private readonly IUserAuthenticationService userAuthenticationService;
-        public BasicAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IUserAuthenticationService userAuthenticationService, IUserRepository repository) : base(options, logger, encoder, clock)
+        public BasicAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IUserAuthenticationService userAuthenticationService) : base(options, logger, encoder, clock)
         {
-            _repository = repository;
             _userAuthenticationService = userAuthenticationService;
         }
 
@@ -42,7 +37,9 @@ namespace VarausJarjestelma.Middleware
                 var userName = credentials[0];
                 var password = credentials[1];
 
-                if(userName != "test" || password != "test")
+
+                user = await _userAuthenticationService.Authenticate(userName, password);
+                if (user == null)
                 {
                     return AuthenticateResult.Fail("Unauthorized");
                 }
@@ -53,7 +50,9 @@ namespace VarausJarjestelma.Middleware
             }
             var claims = new[]
             {
-                new Claim(ClaimTypes.Name, "test")
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+
             };
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);

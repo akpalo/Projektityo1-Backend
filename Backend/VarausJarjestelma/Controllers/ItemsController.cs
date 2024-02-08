@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ReservationSystem2022.Middleware;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Claims;
 using VarausJarjestelma.Models;
 using VarausJarjestelma.Services;
 
@@ -13,16 +15,23 @@ namespace VarausJarjestelma.Controllers
     [ApiController]
     public class ItemsController : ControllerBase
     {
-        //poista context!!!
-        //private readonly ReservationContext _context;
+        
         private readonly IItemService _service;
+        private readonly IUserAuthenticationService _authenticationService;
 
-        public ItemsController(/*ReservationContext context*/ IItemService service)
+        public ItemsController(IItemService service, IUserAuthenticationService authenticationService)
         {
-            //_context = context;
+            _authenticationService = authenticationService;
             _service = service;
         }
 
+        /// <summary>
+        /// Palauttaa kaikki itemit
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     GET /items
         //GET: api/Items
         [HttpGet]
         [Authorize]
@@ -31,19 +40,61 @@ namespace VarausJarjestelma.Controllers
             return Ok(await _service.GetItemsAsync());
         }
 
-        //GET: api/Items/5
-        [HttpGet("{id}")]
+        /// <summary>
+        /// Palauttaa itemit, jonka nimessä hakusana
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     GET /items/itemin id
+
+        [HttpGet("{query}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<ItemDTO>>> QueryItems(string query)
+        {
+            return Ok(await _service.QueryItemsAsync(query));
+        }
+
+        /// <summary>
+        /// Palauttaa haetun itemin ID:n perusteella
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     GET /items/itemin id
+        ///</remarks>
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<ItemDTO>> GetItem(long id)
         {
             var item = await _service.GetItemAsync(id);
 
-            if (item == null) 
+            if (item == null)
             {
                 return NotFound();
             }
+
             return item;
         }
 
+        /// <summary>
+        /// Muokkaa itemiä
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     PUT /items/id
+        ///     {
+        ///     "name": "Itemin nimi",
+        ///     "description": "Itemin lisätiedot",
+        ///     "owner": omistajan ID,
+        ///     "images": [
+        ///       {
+        ///         "url": "kuvaosoite",
+        ///         "description": "kuvateksti"
+        ///       }
+        ///               ]
+        ///       }
+        ///</remarks>
         //PUT: api/Items/5
         [HttpPut("{id}")]
         [Authorize]
@@ -54,27 +105,57 @@ namespace VarausJarjestelma.Controllers
                 return BadRequest();
             }
 
-            
+            //tarkistus, onko käyttäjällä oikeus muokata itemiä
+            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, item);
+
+            if (!isAllowed) //jos ei
+            {
+                return Unauthorized();
+            }
 
             ItemDTO updatedItem = await _service.UpdateItemAsync(item);
-
-            if(updatedItem == null)
+            if (updatedItem == null)
             {
                 return NotFound();
             }
             return NoContent();
-
-            
         }
 
+        /// <summary>
+        /// Lisää uuden itemin
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     POST /items
+        ///     {
+        ///     "name": "Itemin nimi",
+        ///     "description": "Itemin lisätiedot",
+        ///     "owner": omistajan ID,
+        ///     "images": [
+        ///       {
+        ///         "url": "kuvaosoite",
+        ///         "description": "kuvateksti"
+        ///       }
+        ///               ]
+        ///       }
+        ///</remarks>
         //POST: api/Items
         [HttpPost]
         [Authorize]
 
         public async Task<ActionResult<ItemDTO>> PostItem(ItemDTO item)
         {
+            //tarkistus, onko käyttäjällä oikeus muokata itemiä
+            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, item);
+
+            if (!isAllowed) //jos ei
+            {
+                return Unauthorized();
+            }
+
             ItemDTO newItem = await _service.CreateItemAsync(item);
-            if (newItem == null) 
+            if (newItem == null)
             {
                 return Problem();
             }
@@ -82,52 +163,35 @@ namespace VarausJarjestelma.Controllers
             return CreatedAtAction("GetItem", new { id = newItem.Id }, newItem);
         }
 
+        /// <summary>
+        /// Poistaa itemin
+        /// </summary>
+        /// <remarks>
+        /// Esimerkkipyyntö:
+        /// 
+        ///     DELETE /items/itemin id
+        ///</remarks>
         //DELETE: api/Items/5
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> DeleteItem(long id)
+
         {
+            //tarkista oikeus
+            ItemDTO item = new ItemDTO();
+            item.Id = id;
+            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, item);
+
             if (await _service.DeleteItemAsync(id))
             {
                 return Ok();
             }
             return NotFound();
+
+
         }
 
-        /*private bool ItemExists(long id)
-        {
-            return _context.Items.Any(e => e.Id == id);
-        }
 
-        private Item DTOToItem(ItemDTO dto)
-        {
-            Item newItem = new Item();
-            newItem = dto.Name;
-            newItem.Description = dto.Description;
 
-            User owner = _context.Users.Where(x => x.UserName == dto.Owner).FirstOrDefault();
-
-            if (owner != null)
-            {
-                newItem.Owner = owner;
-            }
-            newItem.Images = dto.Images;
-            newItem.accessCount = 0;
-            return newItem;
-        }
-        private ItemDTO ItemToDTO(Item item)
-        {
-            ItemDTO dto = new ItemDTO();
-            dto.Id = item.Id;
-            dto.Name = item.Name;
-            dto.Description = item.Description;
-            dto.Images = item.Images;
-            if (item.Owner != null)
-            {
-                dto.Owner = item.Owner.UserName;
-            }
-            return dto;
-        }*/
-         
     }
 }

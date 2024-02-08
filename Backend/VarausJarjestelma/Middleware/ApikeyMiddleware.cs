@@ -1,4 +1,6 @@
-﻿using System.Drawing.Text;
+﻿using Microsoft.Extensions.Primitives;
+using System.Drawing.Text;
+
 
 namespace VarausJarjestelma.Middleware
 {
@@ -7,11 +9,13 @@ namespace VarausJarjestelma.Middleware
         private readonly RequestDelegate _next;
         private const string APIKEYNAME = "ApiKey";
 
+        //konstruktori
         public ApikeyMiddleware(RequestDelegate next) 
         {
             _next = next;
         }
 
+        //käsittely
         public async Task InvokeAsync(HttpContext context)
         {
             if(!context.Request.Headers.TryGetValue(APIKEYNAME, out var extractedApiKey))

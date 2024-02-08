@@ -1,4 +1,7 @@
-﻿namespace VarausJarjestelma.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
+
+namespace VarausJarjestelma.Models
 {
     public class Reservation
     {
@@ -12,8 +15,10 @@
     public class ReservationDTO
     {
         public long Id { get; set; }
-        public String Owner { get; set; }
+        
         public long Target { get; set; }
+        
+        public long Owner { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
 
