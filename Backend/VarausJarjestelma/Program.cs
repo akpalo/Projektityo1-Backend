@@ -40,7 +40,7 @@ namespace VarausJarjestelma
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            
+
             //swagger
             builder.Services.AddSwaggerGen(options =>
             {
@@ -48,9 +48,19 @@ namespace VarausJarjestelma
                 {
                     Version = "v1",
                     Title = "Varausjärjestelmä API"
-                    
+
                 });
-                
+
+            });
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    policy =>
+                    {
+                        policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod();
+                    });
+                    
             });
 
 
@@ -71,7 +81,7 @@ namespace VarausJarjestelma
                 app.UseSwaggerUI();
             }
 
-            
+            app.UseCors();
             app.UseHttpsRedirection();
             app.UseMiddleware<ApikeyMiddleware>();
             app.UseAuthentication();
