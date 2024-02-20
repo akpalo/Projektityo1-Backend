@@ -16,9 +16,10 @@ namespace VarausJarjestelma.Services
             _userRepository = userRepository;
             _itemRepository = itemRepository;
         }
+
         public async Task<ReservationDTO> CreateReservationAsync(ReservationDTO dto)
         {
-            if(dto.StartTime >= dto.EndTime)
+            if(dto.StartTime > dto.EndTime)
             {
                 return null;
             }
@@ -27,7 +28,7 @@ namespace VarausJarjestelma.Services
             {
                 return null;
             }
-            IEnumerable<Reservation> reservations = await _repository.GetReservationsAsync(target, dto.StartTime, dto.EndTime);
+            IEnumerable<Reservation> reservations = await _repository.GetReservationAsync(target, dto.StartTime, dto.EndTime);
             if(reservations.Count() > 0)
             {
                 return null;
@@ -59,7 +60,7 @@ namespace VarausJarjestelma.Services
             return null;
         }
 
-        public async Task<IEnumerable<ReservationDTO>> GetReservationAsync()
+        public async Task<IEnumerable<ReservationDTO>> GetReservationsAsync()
         {
             IEnumerable<Reservation> reservations = await _repository.GetReservationsAsync();
             List<ReservationDTO> result = new List<ReservationDTO>();
@@ -102,6 +103,8 @@ namespace VarausJarjestelma.Services
             return ReservationToDTO(updatedReservation);
         }
 
+        //!!!Alhaalla muutosfunkiot:
+
         private async Task<Reservation> DTOToReservation(ReservationDTO dto)
         {
             Reservation newReservation = new Reservation();
@@ -130,9 +133,12 @@ namespace VarausJarjestelma.Services
             ReservationDTO dto = new ReservationDTO();
             dto.StartTime = reservation.StartTime;
             dto.EndTime = reservation.EndTime;
+            dto.Id = reservation.Id;
+            
             if (reservation.Owner != null)
             {
                 dto.Owner = reservation.Owner.Id;
+                
 
             }
             if (reservation.Target != null)

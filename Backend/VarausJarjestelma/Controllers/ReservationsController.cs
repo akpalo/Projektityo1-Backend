@@ -25,7 +25,7 @@ namespace VarausJarjestelma.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
         {
-            return Ok(await _service.GetReservationAsync());
+            return Ok(await _service.GetReservationsAsync());
         }
 
         //GET: api/Reservations/5
@@ -69,15 +69,15 @@ namespace VarausJarjestelma.Controllers
 
         //POST: api/Reservations
         [HttpPost]
-        [Authorize]
+        
         public async Task<ActionResult<ReservationDTO>> PostReservation(ReservationDTO reservation)
         {
-            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, reservation);
+            /*bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, reservation);
 
             if (!isAllowed) //jos ei
             {
                 return Unauthorized();
-            }
+            }*/
 
             reservation = await _service.CreateReservationAsync(reservation);
             if (reservation == null)
@@ -90,13 +90,13 @@ namespace VarausJarjestelma.Controllers
 
         //DELETE: api/Reservations/5
         [HttpDelete("{id}")]
-        [Authorize]
+       
         public async Task<IActionResult> DeleteReservation(long id)
         {
             //tarkista oikeus
-            ReservationDTO reservation = new ReservationDTO();
+            /*ReservationDTO reservation = new ReservationDTO();
             reservation.Id = id;
-            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, reservation);
+            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, reservation);*/
 
             if (await _service.DeleteReservationAsync(id))
             {

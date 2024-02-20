@@ -34,7 +34,7 @@ namespace VarausJarjestelma.Controllers
         ///     GET /items
         //GET: api/Items
         [HttpGet]
-        [Authorize]
+        
         public async Task<ActionResult<IEnumerable<ItemDTO>>> GetItems()
         {
             return Ok(await _service.GetItemsAsync());
@@ -142,17 +142,17 @@ namespace VarausJarjestelma.Controllers
         ///</remarks>
         //POST: api/Items
         [HttpPost]
-        [Authorize]
+        
 
         public async Task<ActionResult<ItemDTO>> PostItem(ItemDTO item)
         {
             //tarkistus, onko käyttäjällä oikeus muokata itemiä
-            bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, item);
+            /*bool isAllowed = await _authenticationService.IsAllowed(this.User.FindFirst(ClaimTypes.Name).Value, item);
 
             if (!isAllowed) //jos ei
             {
                 return Unauthorized();
-            }
+            }*/
 
             ItemDTO newItem = await _service.CreateItemAsync(item);
             if (newItem == null)

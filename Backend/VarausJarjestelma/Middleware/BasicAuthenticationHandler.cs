@@ -28,25 +28,35 @@ namespace ReservationSystem2022.Middleware
             {
                 return AuthenticateResult.Fail("Authorization header missing");
             }
+
             User user = null;
-            try
+
+            // Check for development environment variable
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
-                var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
-                var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
-                var userName = credentials[0];
-                var password = credentials[1];
+                // Hardcode user for development
+                user = new User { UserName = "developmentUser", Password = "developmentPassword" };
+            }
+            else
+            {
+                try
+                {
+                    var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
+                    var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
+                    var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
+                    var userName = credentials[0];
+                    var password = credentials[1];
 
-
-                user = await _userAuthenticationService.Authenticate(userName, password);
-                if (user == null)
+                    user = await _userAuthenticationService.Authenticate(userName, password);
+                    if (user == null)
+                    {
+                        return AuthenticateResult.Fail("Unauthorized");
+                    }
+                }
+                catch
                 {
                     return AuthenticateResult.Fail("Unauthorized");
                 }
-            }
-            catch
-            {
-                return AuthenticateResult.Fail("Unauthorized");
             }
             var claims = new[]
             {

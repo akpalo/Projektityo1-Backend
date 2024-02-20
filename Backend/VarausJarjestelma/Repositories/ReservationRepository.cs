@@ -46,10 +46,11 @@ namespace VarausJarjestelma.Repositories
 
         public async Task<IEnumerable<Reservation>> GetReservationsAsync()
         {
-            return await _context.Reservations.ToListAsync();
+            return await _context.Reservations.Include(s => s.Owner).Include(s => s.Target).ToListAsync();
         }
+        
 
-        public async Task<IEnumerable<Reservation>> GetReservationsAsync(Item target, DateTime start, DateTime end)
+        public async Task<IEnumerable<Reservation>> GetReservationAsync(Item target, DateTime start, DateTime end)
         {
             return await _context.Reservations.Include(i => i.Owner).Include(x => x.Target).Where(x => x.Target == target && ((x.StartTime >= start && x.StartTime < end) || (x.EndTime >= start && x.EndTime < end) || (x.StartTime <= start && x.EndTime >= end))).ToListAsync();
         }

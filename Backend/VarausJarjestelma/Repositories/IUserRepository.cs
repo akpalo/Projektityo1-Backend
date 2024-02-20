@@ -9,5 +9,6 @@ namespace VarausJarjestelma.Repositories
         public Task<IEnumerable<User>> GetUsersAsync();
         public Task<User> UpdateUserAsync(User user);
         public Task<Boolean> DeleteUserAsync(User user);
+        
     }
 }
